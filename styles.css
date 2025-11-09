@@ -180,6 +180,42 @@ body {
     color: #667eea;
 }
 
+#gravity-indicator {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    border: 3px solid #667eea;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    min-width: 100px;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+}
+
+#gravity-arrow {
+    font-size: 48px;
+    color: #667eea;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+#gravity-arrow.up {
+    transform: rotate(180deg);
+    color: #e74c3c;
+    text-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+}
+
+#gravity-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
 /* Buttons */
 .game-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

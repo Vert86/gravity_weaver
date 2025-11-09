@@ -153,11 +153,17 @@ class Player {
         this.gravityDirection *= -1;
         this.velocityY = this.jumpForce * this.gravityDirection;
 
-        // Create particles on flip
-        createParticles(this.x, this.y, 5);
+        // Create particles on flip (more in tutorial for visibility)
+        const particleCount = currentState === GameState.TUTORIAL ? 15 : 5;
+        createParticles(this.x, this.y, particleCount);
 
         // Play flip sound
         playFlipSound();
+
+        // Update gravity indicator in tutorial
+        if (currentState === GameState.TUTORIAL) {
+            updateGravityIndicator();
+        }
     }
 
     draw() {
@@ -184,19 +190,33 @@ class Player {
             ctx.globalAlpha = 1;
         }
 
-        // Draw player
+        // Draw player (bigger in tutorial for visibility)
+        const drawRadius = currentState === GameState.TUTORIAL ? this.radius * 1.5 : this.radius;
+        const glowIntensity = currentState === GameState.TUTORIAL ? 40 : 20;
+
         ctx.fillStyle = currentSkin.color;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw glow effect
+        // Draw glow effect (stronger in tutorial)
         ctx.shadowColor = currentSkin.color;
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = glowIntensity;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
+
+        // Add extra ring in tutorial for visibility
+        if (currentState === GameState.TUTORIAL) {
+            ctx.strokeStyle = currentSkin.color;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, drawRadius + 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
     }
 
     reset() {
@@ -474,6 +494,21 @@ function updateScore() {
 // TUTORIAL FUNCTIONS
 // ==========================================
 
+function updateGravityIndicator() {
+    const arrow = document.getElementById('gravity-arrow');
+    if (!arrow) return;
+
+    if (player.gravityDirection === -1) {
+        // Gravity pulling up
+        arrow.classList.add('up');
+        arrow.textContent = '▲';
+    } else {
+        // Gravity pulling down
+        arrow.classList.remove('up');
+        arrow.textContent = '▼';
+    }
+}
+
 const tutorialSteps = [
     {
         title: "Welcome!",
@@ -483,13 +518,13 @@ const tutorialSteps = [
     },
     {
         title: "Flip Gravity UP",
-        text: "TAP AND HOLD anywhere on the screen to flip gravity upward. Try it now!",
+        text: "TAP AND HOLD anywhere to flip gravity upward. Watch the arrow on the right and the glowing thread move UP!",
         requirement: 'flip',
         count: 1
     },
     {
         title: "Flip Gravity DOWN",
-        text: "RELEASE to flip gravity back downward. Practice flipping up and down 3 more times.",
+        text: "RELEASE to flip gravity downward. Watch the thread fall! Practice flipping 3 more times.",
         requirement: 'flip',
         count: 6
     },
@@ -531,6 +566,7 @@ function startTutorial() {
     document.getElementById('ui-overlay').style.display = 'none';
 
     updateTutorialUI();
+    updateGravityIndicator();
 }
 
 function updateTutorialUI() {
