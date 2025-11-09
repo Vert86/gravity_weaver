@@ -94,12 +94,19 @@ const GameState = {
     START: 'start',
     PLAYING: 'playing',
     GAMEOVER: 'gameover',
-    SHOP: 'shop'
+    SHOP: 'shop',
+    TUTORIAL: 'tutorial'
 };
 
 let currentState = GameState.START;
 let score = 0;
 let highScore = localStorage.getItem('highScore') || 0;
+
+// Tutorial state
+let tutorialStep = 0;
+let tutorialCompleted = false;
+let tutorialFlipCount = 0;
+let tutorialObstaclesPassed = 0;
 
 // ==========================================
 // PLAYER / THREAD
@@ -377,18 +384,30 @@ let isHolding = false;
 function handleInputStart(e) {
     e.preventDefault();
 
-    if (currentState === GameState.PLAYING) {
+    if (currentState === GameState.PLAYING || currentState === GameState.TUTORIAL) {
         isHolding = true;
         player.flipGravity();
+
+        // Track tutorial flips
+        if (currentState === GameState.TUTORIAL) {
+            tutorialFlipCount++;
+            checkTutorialProgress();
+        }
     }
 }
 
 function handleInputEnd(e) {
     e.preventDefault();
 
-    if (currentState === GameState.PLAYING) {
+    if (currentState === GameState.PLAYING || currentState === GameState.TUTORIAL) {
         isHolding = false;
         player.flipGravity();
+
+        // Track tutorial flips
+        if (currentState === GameState.TUTORIAL) {
+            tutorialFlipCount++;
+            checkTutorialProgress();
+        }
     }
 }
 
@@ -452,6 +471,200 @@ function updateScore() {
 }
 
 // ==========================================
+// TUTORIAL FUNCTIONS
+// ==========================================
+
+const tutorialSteps = [
+    {
+        title: "Welcome!",
+        text: "Let's learn how to play Gravity Weaver. You control a thread that moves automatically to the right.",
+        requirement: 'wait',
+        duration: 2000
+    },
+    {
+        title: "Flip Gravity UP",
+        text: "TAP AND HOLD anywhere on the screen to flip gravity upward. Try it now!",
+        requirement: 'flip',
+        count: 1
+    },
+    {
+        title: "Flip Gravity DOWN",
+        text: "RELEASE to flip gravity back downward. Practice flipping up and down 3 more times.",
+        requirement: 'flip',
+        count: 6
+    },
+    {
+        title: "Navigate Obstacles",
+        text: "Now use gravity flips to navigate through the gap! Pass through 1 obstacle.",
+        requirement: 'obstacle',
+        count: 1
+    },
+    {
+        title: "Keep Going!",
+        text: "Great! Pass through 2 more obstacles to complete the tutorial.",
+        requirement: 'obstacle',
+        count: 3
+    },
+    {
+        title: "Tutorial Complete!",
+        text: "You're ready to play! Tap anywhere to return to the menu.",
+        requirement: 'complete',
+        duration: 3000
+    }
+];
+
+let tutorialStartTime = 0;
+
+function startTutorial() {
+    currentState = GameState.TUTORIAL;
+    tutorialStep = 0;
+    tutorialFlipCount = 0;
+    tutorialObstaclesPassed = 0;
+    tutorialStartTime = Date.now();
+    obstacles = [];
+    particles = [];
+    player.reset();
+
+    // Hide start screen, show tutorial
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('tutorial-screen').classList.remove('hidden');
+    document.getElementById('ui-overlay').style.display = 'none';
+
+    updateTutorialUI();
+}
+
+function updateTutorialUI() {
+    const step = tutorialSteps[tutorialStep];
+    document.getElementById('tutorial-title').textContent = step.title;
+    document.getElementById('tutorial-text').textContent = step.text;
+    document.getElementById('tutorial-step').textContent = tutorialStep + 1;
+    document.getElementById('tutorial-total').textContent = tutorialSteps.length;
+}
+
+function checkTutorialProgress() {
+    const step = tutorialSteps[tutorialStep];
+
+    if (step.requirement === 'flip' && tutorialFlipCount >= step.count) {
+        nextTutorialStep();
+    } else if (step.requirement === 'obstacle' && tutorialObstaclesPassed >= step.count) {
+        nextTutorialStep();
+    }
+}
+
+function nextTutorialStep() {
+    tutorialStep++;
+
+    if (tutorialStep >= tutorialSteps.length) {
+        completeTutorial();
+        return;
+    }
+
+    const step = tutorialSteps[tutorialStep];
+    updateTutorialUI();
+
+    // Auto-advance wait steps
+    if (step.requirement === 'wait') {
+        tutorialStartTime = Date.now();
+    }
+
+    // Start spawning obstacles for obstacle steps
+    if (step.requirement === 'obstacle' && obstacles.length === 0) {
+        spawnTutorialObstacle();
+    }
+}
+
+function spawnTutorialObstacle() {
+    // Create a slower, easier obstacle for tutorial
+    const obstacle = new Obstacle();
+    obstacle.speed = 2;
+    obstacle.gap = 250; // Bigger gap for tutorial
+    obstacles.push(obstacle);
+}
+
+function updateTutorial() {
+    const step = tutorialSteps[tutorialStep];
+
+    // Check wait steps
+    if (step.requirement === 'wait') {
+        if (Date.now() - tutorialStartTime >= step.duration) {
+            nextTutorialStep();
+        }
+    }
+
+    // Spawn obstacles as needed
+    if (step.requirement === 'obstacle') {
+        // Keep 2 obstacles on screen during tutorial
+        if (obstacles.length < 2) {
+            spawnTutorialObstacle();
+        }
+    }
+
+    // Update player
+    player.update();
+
+    // Update obstacles
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].update();
+        obstacles[i].draw();
+
+        // Check collision
+        if (obstacles[i].collidesWith(player)) {
+            // In tutorial, just reset position instead of game over
+            player.y = canvas.height / 2;
+            player.velocityY = 0;
+        }
+
+        // Track obstacle passing
+        if (!obstacles[i].passed && obstacles[i].x + obstacles[i].width < player.x) {
+            obstacles[i].passed = true;
+            tutorialObstaclesPassed++;
+            playScoreSound();
+            checkTutorialProgress();
+        }
+
+        // Remove off-screen obstacles
+        if (obstacles[i].offScreen()) {
+            obstacles.splice(i, 1);
+        }
+    }
+
+    // Update and draw particles
+    for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw();
+
+        if (particles[i].isDead()) {
+            particles.splice(i, 1);
+        }
+    }
+
+    // Draw player
+    player.draw();
+}
+
+function completeTutorial() {
+    tutorialCompleted = true;
+    const step = tutorialSteps[tutorialSteps.length - 1];
+    updateTutorialUI();
+
+    // Wait for click to return to menu
+    setTimeout(() => {
+        const completeHandler = () => {
+            document.getElementById('tutorial-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            currentState = GameState.START;
+            obstacles = [];
+            particles = [];
+            canvas.removeEventListener('click', completeHandler);
+            canvas.removeEventListener('touchstart', completeHandler);
+        };
+
+        canvas.addEventListener('click', completeHandler);
+        canvas.addEventListener('touchstart', completeHandler);
+    }, 500);
+}
+
+// ==========================================
 // GAME LOOP
 // ==========================================
 
@@ -511,6 +724,10 @@ function gameLoop() {
         // Draw player
         player.draw();
 
+    } else if (currentState === GameState.TUTORIAL) {
+        // Run tutorial update
+        updateTutorial();
+
     } else {
         // Still draw particles in other states
         for (let i = particles.length - 1; i >= 0; i--) {
@@ -535,6 +752,10 @@ function gameLoop() {
 
 document.getElementById('start-btn').addEventListener('click', () => {
     startGame();
+});
+
+document.getElementById('tutorial-btn').addEventListener('click', () => {
+    startTutorial();
 });
 
 document.getElementById('restart-btn').addEventListener('click', () => {
