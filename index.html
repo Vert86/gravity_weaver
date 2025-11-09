@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Gravity Weaver</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <div id="score-display">
+                <div class="score-label">SCORE</div>
+                <div id="current-score">0</div>
+            </div>
+
+            <div id="high-score-display">
+                <div class="score-label">BEST</div>
+                <div id="high-score">0</div>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen">
+            <h1 class="game-title">GRAVITY WEAVER</h1>
+            <p class="instructions">TAP & HOLD to flip gravity</p>
+            <p class="instructions-sub">Guide the thread through the obstacles</p>
+            <button id="start-btn" class="game-btn">START GAME</button>
+            <button id="shop-btn" class="game-btn secondary">CUSTOMIZE</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="screen hidden">
+            <h2 class="screen-title">GAME OVER</h2>
+            <div class="final-score-container">
+                <div class="score-label">YOUR SCORE</div>
+                <div id="final-score">0</div>
+            </div>
+            <div class="final-score-container">
+                <div class="score-label">BEST SCORE</div>
+                <div id="final-high-score">0</div>
+            </div>
+            <button id="restart-btn" class="game-btn">PLAY AGAIN</button>
+            <button id="share-btn" class="game-btn secondary">SHARE SCORE</button>
+        </div>
+
+        <!-- Shop/Customize Screen -->
+        <div id="shop-screen" class="screen hidden">
+            <h2 class="screen-title">CUSTOMIZE</h2>
+            <div class="customize-section">
+                <h3>Thread Skins</h3>
+                <div id="skin-options" class="option-grid">
+                    <!-- Skins will be dynamically added here -->
+                </div>
+            </div>
+            <div class="customize-section">
+                <h3>Trail Effects</h3>
+                <div id="trail-options" class="option-grid">
+                    <!-- Trails will be dynamically added here -->
+                </div>
+            </div>
+            <button id="back-btn" class="game-btn">BACK</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
